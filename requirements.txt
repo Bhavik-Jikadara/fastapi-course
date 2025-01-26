@@ -1,3 +1,4 @@
 fastapi
 uvicorn
 SQLAlchemy
+passlib[bcrypt]

@@ -2,6 +2,7 @@ from typing import List
 from fastapi import FastAPI, Depends, status, Response, HTTPException
 from . import models, schemas, database
 from sqlalchemy.orm import Session
+from .hashing import Hash
 
 models.Base.metadata.create_all(database.engine)
 
@@ -42,7 +43,7 @@ def destroy(id, db: Session = Depends(get_db)):
     return "done"
 
 
-@app.get("/blog", response_model=List[schemas.ShowBlog]) 
+@app.get("/blog", response_model=List[schemas.ShowBlog])
 def all_blog(db: Session = Depends(get_db)):
     blogs = db.query(models.Blog).all()
     return blogs
@@ -79,3 +80,65 @@ def show(id: int, db: Session = Depends(get_db)):
         )
 
     return blog
+
+
+# ============= Let's user part =============
+
+@app.post("/user", status_code=status.HTTP_201_CREATED, response_model=schemas.ShowUser)
+def create_user(request: schemas.User, db: Session = Depends(get_db)):
+    hashed_password = Hash.bcrypt(request.password)
+
+    new_user = models.User(
+        name=request.name, email=request.email, password=hashed_password
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+@app.get("/user", response_model=List[schemas.ShowUser])
+def all_users(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
+    return users
+
+@app.get("/user/{id}", response_model=schemas.ShowUser)
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {id} not found"
+        )
+    
+    return user
+
+@app.delete("/user/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def destroy(id, db: Session = Depends(get_db)):
+    user = (
+        db.query(models.User)
+        .filter(models.User.id == id)
+        .delete(synchronize_session=False)
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {id} not found"
+        )
+
+    db.commit()
+    return "Successfully deleted"
+
+@app.put("/user/{id}", status_code=status.HTTP_202_ACCEPTED)
+def update(id, request: schemas.User, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id)
+    
+    if not user.first():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {id} not found"
+        )
+        
+    user.update(request)
+    db.commit()
+    
+    return "updated"
+
