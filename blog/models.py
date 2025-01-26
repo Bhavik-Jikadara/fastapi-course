@@ -1,5 +1,5 @@
 from .database import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 
 class Blog(Base):
     # Table name
@@ -8,3 +8,4 @@ class Blog(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)
     body = Column(String)
+    published = Column(Boolean, default=False)

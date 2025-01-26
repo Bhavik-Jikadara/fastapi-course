@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import FastAPI, Depends, status, Response, HTTPException
 from . import models, schemas, database
 from sqlalchemy.orm import Session
@@ -41,7 +42,7 @@ def destroy(id, db: Session = Depends(get_db)):
     return "done"
 
 
-@app.get("/blog")
+@app.get("/blog", response_model=List[schemas.ShowBlog]) 
 def all_blog(db: Session = Depends(get_db)):
     blogs = db.query(models.Blog).all()
     return blogs
@@ -62,8 +63,8 @@ def update(id, request: schemas.Blog, db: Session = Depends(get_db)):
     return "updated"
 
 
-@app.get("/blog/{id}", status_code=200)
-def show(id, response: Response, db: Session = Depends(get_db)):
+@app.get("/blog/{id}", status_code=200, response_model=schemas.ShowBlog)
+def show(id: int, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id).first()
 
     if not blog:
