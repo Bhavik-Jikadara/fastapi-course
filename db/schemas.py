@@ -1,11 +1,11 @@
 from typing import List
 from pydantic import BaseModel
 
-class Blog(BaseModel):
+class BlogBase(BaseModel):
     title: str
     body: str
 
-class Blog(Blog):
+class Blog(BlogBase):
     class Config():
         orm_mode = True
     
